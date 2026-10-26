@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Optimizador Inteligente de Tráfico en Redes | Algoritmo de Dijkstra</title>
+  <meta name="description" content="Simulador interactivo y didáctico de enrutamiento dinámico de datos basado en el Algoritmo de Dijkstra. Red de fibra óptica nacional con origen en San Juan.">
+  
+  <!-- Tipografía Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="noc-theme intro-active">
+
+  <!-- =========================================================================
+       1. PANTALLA CINEMÁTICA DE INTRODUCCIÓN (RED MUNDIAL -> ARGENTINA)
+       ========================================================================= -->
+  <div class="intro-screen" id="intro-screen">
+    <canvas id="introGlobeCanvas" class="intro-canvas"></canvas>
+    
+    <div class="intro-content">
+      <div class="intro-tag">
+        <span class="live-dot"></span>
+        SISTEMA INTELIGENTE DE ENRUTAMIENTO DINÁMICO
+      </div>
+      <h1 class="intro-title">
+        Optimizador Inteligente de Tráfico en Redes
+      </h1>
+      <p class="intro-subtitle">
+        Visualiza en tiempo real cómo el <strong>Algoritmo de Dijkstra</strong> encuentra el camino más veloz para tus datos, esquivando congestiones y cables cortados al instante.
+      </p>
+
+      <div class="intro-actions">
+        <button class="btn btn-intro-start" id="btn-start-simulation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Iniciar Simulación de Red
+        </button>
+      </div>
+
+      <div class="intro-footer-hint">
+        Conexión directa desde <strong>San Juan</strong> hacia el <strong>Data Center Central</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. CABECERA MINIMALISTA (HEADER)
+       ========================================================================= -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-symbol">⚡</div>
+      <div class="brand-text">
+        <h1 class="brand-title">NETWORK TRAFFIC OPTIMIZER</h1>
+        <span class="brand-subtitle" id="header-scenario-name">Modo Argentina (Red Troncal CABASE - 12 Nodos)</span>
+      </div>
+    </div>
+
+    <!-- Indicadores Clave Minimalistas -->
+    <div class="header-summary">
+      <div class="summary-pill">
+        <span class="pill-label">TRAYECTO</span>
+        <span class="pill-value highlight-cyan" id="header-route-nodes">San Juan ➔ Buenos Aires</span>
+      </div>
+
+      <div class="summary-pill">
+        <span class="pill-label">LATENCIA TOTAL</span>
+        <span class="pill-value highlight-green" id="header-total-latency">24 ms</span>
+      </div>
+
+      <div class="summary-pill">
+        <span class="pill-label">ESTADO DE RED</span>
+        <div class="status-indicator active" id="header-status-indicator">
+          <span class="status-dot"></span>
+          <span id="header-status-text">Óptima (En Línea)</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       3. CUERPO PRINCIPAL DE LA APLICACIÓN
+       ========================================================================= -->
+  <main class="main-layout">
+    
+    <!-- Barra Superior de Modos y Acciones Didácticas -->
+    <nav class="action-bar">
+      <!-- Selector de Modo Simplificado -->
+      <div class="bar-group">
+        <span class="bar-label">ESCENARIO:</span>
+        <div class="mode-toggle-group">
+          <button class="btn btn-mode active" id="btn-mode-argentina">
+            🇦🇷 Red Troncal Argentina (12 Nodos CABASE)
+          </button>
+          <button class="btn btn-mode" id="btn-mode-theoretical">
+            📐 Modo Teórico Formal (6 Nodos)
+          </button>
+        </div>
+      </div>
+
+      <div class="bar-divider"></div>
+
+      <!-- Selectores de Nodos -->
+      <div class="bar-group">
+        <label for="select-origin" class="bar-label">ORIGEN:</label>
+        <select id="select-origin" class="clean-select" aria-label="Seleccionar nodo origen"></select>
+
+        <span class="arrow-sep">➔</span>
+
+        <label for="select-target" class="bar-label">DESTINO:</label>
+        <select id="select-target" class="clean-select" aria-label="Seleccionar nodo destino"></select>
+      </div>
+
+      <div class="bar-divider"></div>
+
+      <!-- Botones de Acción Rápida -->
+      <div class="bar-group buttons-cluster">
+        <button class="btn btn-primary" id="btn-send-packet" title="Envía un paquete de datos visible a través de la ruta más rápida">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Enviar Paquete
+        </button>
+        <button class="btn btn-warning" id="btn-simulate-congestion" title="Simula saturación de tráfico agregando 35 ms al enlace activo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Simular Congestión (+35 ms)
+        </button>
+        <button class="btn btn-danger" id="btn-cut-link" title="Corta el cable principal para observar el desvío automático de emergencia">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Cortar Enlace Troncal
+        </button>
+        <button class="btn btn-ghost" id="btn-reset-network" title="Restaura la red a sus velocidades óptimas originales">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Restablecer
+        </button>
+      </div>
+    </nav>
+
+    <!-- Área de Trabajo (Canvas Topológico + Panel Lateral Humano) -->
+    <div class="workspace-area">
+      
+      <!-- Lienzo Principal del Canvas (Mapa de Red) -->
+      <div class="canvas-container" id="canvas-container">
+        <!-- Banner Flotante HUD de Conmutación de Ruta -->
+        <div class="reroute-toast hidden" id="reroute-toast">
+          <div class="reroute-badge">⚡ RUTA RECALCULADA</div>
+          <div class="reroute-msg" id="reroute-msg">Dijkstra desvió los datos para evitar congestión.</div>
+        </div>
+
+        <!-- Controles Flotantes de Pan & Zoom (Estilo Leaflet / GIS) -->
+        <div class="canvas-zoom-controls">
+          <button class="btn-zoom" id="btn-zoom-in" title="Acercar (Zoom In)">+</button>
+          <button class="btn-zoom" id="btn-zoom-out" title="Alejar (Zoom Out)">−</button>
+          <button class="btn-zoom btn-zoom-reset" id="btn-zoom-reset" title="Restablecer Vista / Centrar Red">🎯 Centrar Red</button>
+        </div>
+
+        <canvas id="topologyCanvas"></canvas>
+
+        <!-- Indicador de Cable Seleccionado / Editor Rápido de Milisegundos -->
+        <div class="cable-popover hidden" id="cable-popover">
+          <div class="popover-header">
+            <span class="popover-title" id="popover-cable-title">San Juan ⟷ Mendoza</span>
+            <button class="popover-close" id="btn-close-popover">&times;</button>
+          </div>
+          
+          <div class="popover-ms-editor">
+            <label class="popover-label">Latencia del Enlace:</label>
+            <div class="popover-input-row">
+              <button class="btn-quick-ms" id="btn-quick-sub5" title="Restar 5 ms">−5 ms</button>
+              <div class="ms-input-wrapper">
+                <input type="number" id="input-cable-ms" min="1" max="250" value="5" class="ms-numeric-input" aria-label="Milisegundos del cable" />
+                <span class="ms-unit">ms</span>
+              </div>
+              <button class="btn-quick-ms" id="btn-quick-add10" title="Sumar 10 ms">+10 ms</button>
+            </div>
+            <span class="popover-hint">Dijkstra recalcula la ruta en vivo</span>
+          </div>
+
+          <div class="popover-actions">
+            <button class="btn btn-sm btn-popover-danger" id="btn-popover-toggle-cut">
+              ❌ Cortar Cable
+            </button>
+            <button class="btn btn-sm btn-popover-reset" id="btn-popover-reset">
+              🔄 Restaurar Original
+            </button>
+          </div>
+        </div>
+
+        <!-- Leyenda Minimalista Integrada -->
+        <div class="canvas-floating-legend">
+          <span class="legend-dot dot-origin"></span> Origen
+          <span class="legend-dot dot-target"></span> Destino
+          <span class="legend-line line-optimal"></span> Ruta Óptima
+          <span class="legend-line line-backup"></span> Enlace de Respaldo
+          <span class="legend-line line-cut"></span> Enlace Cortado
+        </div>
+
+        <!-- Barra Flotante de Control de Pasos Didáctica -->
+        <div class="floating-step-bar">
+          <button class="step-btn" id="ctrl-first" title="Paso 0: Inicialización">|◄</button>
+          <button class="step-btn" id="ctrl-prev" title="Paso anterior">◀ Anterior</button>
+          <button class="step-btn step-play" id="ctrl-play" title="Reproducir explicación paso a paso">
+            <span id="play-text">▶ Explicar Paso a Paso</span>
+          </button>
+          <button class="step-btn" id="ctrl-next" title="Siguiente paso">Siguiente ▶</button>
+          <button class="step-btn" id="ctrl-last" title="Paso 6: Solución final">►|</button>
+          <span class="step-counter" id="step-counter-text">Paso 0 de 6</span>
+        </div>
+      </div>
+
+      <!-- Panel Derecho: "Monitoreo / Explicación Didáctica" -->
+      <aside class="side-panel">
+        <div class="card-monitoring">
+          <div class="card-header-clean">
+            <div class="header-icon" id="panel-header-icon">📡</div>
+            <div class="header-info">
+              <h2 id="panel-header-title">Monitoreo en Tiempo Real</h2>
+              <span class="subtitle-text" id="panel-header-subtitle">Explicación instantánea del comportamiento de la red</span>
+            </div>
+          </div>
+
+          <!-- Cuadro de Explicación Didáctica en Lenguaje Cotidiano -->
+          <div class="explanation-box" id="explanation-box">
+            <div class="status-headline" id="explanation-headline">
+              Conexión directa establecida
+            </div>
+            <p class="status-story" id="explanation-story">
+              El paquete está listo para salir. Dijkstra evaluó todos los enlaces y seleccionó el trayecto más veloz hacia el destino.
+            </p>
+          </div>
+
+          <!-- Desglose Visual del Camino y Tiempos -->
+          <div class="route-hops-container">
+            <div class="hops-title">TRAYECTORIA ACTIVA Y DEMORAS:</div>
+            <div class="hops-list" id="route-hops-list">
+              <!-- Hops generados dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Métricas Resumen -->
+          <div class="metrics-grid">
+            <div class="metric-mini">
+              <span class="mini-label">Tiempo Total</span>
+              <span class="mini-value" id="mini-latency-val">24 ms</span>
+            </div>
+            <div class="metric-mini">
+              <span class="mini-label">Paradas / Nodos</span>
+              <span class="mini-value" id="mini-hops-val">4</span>
+            </div>
+            <div class="metric-mini">
+              <span class="mini-label">Salud del Enlace</span>
+              <span class="mini-value highlight-green" id="mini-health-val">100%</span>
+            </div>
+          </div>
+
+          <!-- Interruptor Sutil: Notación Matemática Formal -->
+          <div class="formal-math-toggle-section">
+            <button class="btn btn-math-toggle" id="btn-toggle-formal-math">
+              <span>📐 Notación Matemática Formal (Cátedra)</span>
+              <span class="toggle-chevron" id="math-toggle-chevron">▼</span>
+            </button>
+
+            <!-- Bloque Colapsable de Notación Formal -->
+            <div class="formal-math-drawer hidden" id="formal-math-drawer">
+              <div class="formal-card">
+                <span class="formal-label">Conjunto V(T) (Vértices Definitivos):</span>
+                <code class="formal-code" id="math-vt">{ San Juan }</code>
+              </div>
+              <div class="formal-card">
+                <span class="formal-label">Conjunto E(T) (Aristas del Árbol):</span>
+                <code class="formal-code" id="math-et">∅</code>
+              </div>
+              <div class="formal-card">
+                <span class="formal-label">Franja F (Candidatos en frontera):</span>
+                <code class="formal-code highlight-amber" id="math-fringe">{ San Juan }</code>
+              </div>
+              <div class="formal-card">
+                <span class="formal-label">Vértice Elegido (x con menor L):</span>
+                <code class="formal-code highlight-green" id="math-chosen">San Juan</code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- =========================================================================
+         4. TABLA INFERIOR COLAPSABLE (ACORDEÓN - DESPEJA EL 50% DE PANTALLA)
+         ========================================================================= -->
+    <section class="accordion-section">
+      <div class="accordion-header" id="accordion-trace-toggle">
+        <div class="accordion-title-wrap">
+          <span class="accordion-icon">📊</span>
+          <span class="accordion-title" id="accordion-title-text">Registro Técnico de Iteraciones de Dijkstra</span>
+          <span class="accordion-pill" id="accordion-step-count">7 iteraciones calculadas</span>
+        </div>
+        <div class="accordion-action">
+          <span class="accordion-hint">Clic para expandir / ocultar tabla completa</span>
+          <span class="accordion-arrow" id="accordion-arrow">▼</span>
+        </div>
+      </div>
+
+      <div class="accordion-body collapsed" id="accordion-trace-body">
+        <div class="table-container">
+          <table class="trace-table" id="trace-table">
+            <thead>
+              <tr id="trace-table-headers">
+                <!-- Encabezados dinámicos generados por JS -->
+              </tr>
+            </thead>
+            <tbody id="trace-table-body">
+              <!-- Filas dinámicas generadas por JS -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="table-footer-actions">
+          <span class="table-tip">💡 Puedes hacer clic sobre cualquier fila para saltar la simulación a ese paso exacto.</span>
+          <button class="btn btn-sm btn-ghost" id="btn-export-csv">Exportar Traza a CSV</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Notificación Toast Flotante -->
+  <div class="toast hidden" id="noc-toast">
+    <span class="toast-icon">ℹ</span>
+    <span class="toast-message" id="toast-message">Mensaje del sistema</span>
+  </div>
+
+  <!-- Script Principal de la SPA -->
+  <script src="app.js"></script>
+</body>
+</html>
